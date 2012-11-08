@@ -1,0 +1,3 @@
+/etc/riemann
+/var/log/riemann
+/var/lib/riemann

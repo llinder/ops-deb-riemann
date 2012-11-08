@@ -18,6 +18,7 @@ alerting; and to glue various monitoring systems together."
   :repositories {
     "boundary-site" "http://maven.boundary.com/artifactory/repo"
   }
+  :local-repo "/home/ubuntu/.m2/repository"
   :dependencies [
     [org.clojure/clojure "1.4.0"]
     [org.clojure/math.numeric-tower "0.0.1"]

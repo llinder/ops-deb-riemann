@@ -1,0 +1,52 @@
+description "Riemann Server"
+author "Lance Linder <llinder@medicomhealth.com>"
+
+start on (net-device-up
+          and local-filesystems
+          and runlevel [2345])
+stop on runlevel [!2345]
+
+respawn
+
+script
+        OPENJDKS=""
+        # this is a work-around until there is a suitable runtime replacement
+        # for dpkg-architecture for arch:all packages
+        # this function sets the variable OPENJDKS
+        for jvmdir in /usr/lib/jvm/java-7-openjdk-*
+        do
+                if [ -d "${jvmdir}" -a "${jvmdir}" != "/usr/lib/jvm/java-7-openjdk-common" ]
+                then
+                        OPENJDKS=$jvmdir
+                fi
+        done
+        for jvmdir in /usr/lib/jvm/java-6-openjdk-*
+        do
+                if [ -d "${jvmdir}" -a "${jvmdir}" != "/usr/lib/jvm/java-6-openjdk-common" ]
+                then
+                        OPENJDKS="${OPENJDKS} ${jvmdir}"
+                fi
+        done
+
+        # The first existing directory is used for JAVA_HOME (if JAVA_HOME is not
+        # defined in $DEFAULT)
+        JDK_DIRS="/usr/lib/jvm/default-java ${OPENJDKS} /usr/lib/jvm/java-6-openjdk /usr/lib/jvm/java-6-sun /usr/lib/jvm/java-7-oracle"
+
+        # Look for the right JVM to use
+        for jdir in $JDK_DIRS; do
+                if [ -r "$jdir/bin/java" -a -z "${JAVA_HOME}" ]; then
+                        JAVA_HOME="$jdir"
+                fi
+        done
+
+        if [ -f /etc/default/riemann ]; then . /etc/default/riemann; fi
+
+        chdir ${RIEMANN_HOME}
+
+        exec start-stop-daemon --start \
+        --chuid $RIEMANN_USER -p "/var/run/riemann.pid" \
+        --exec $JAVA_HOME/bin/java -- ${JAVA_OPTS} \
+        -jar /usr/lib/riemann/riemann.jar ${RIEMANN_CONFIG} >> /var/log/riemann/riemann.out 2>&1
+
+end script
+
